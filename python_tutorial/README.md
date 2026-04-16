@@ -203,3 +203,14 @@ for emp in emps:
 # 20000000
 # 10000000
 ```
+## Thực hành setup virtual environment, pip, quản lý dependencies với requirements.txt
+### Venv
+![Venv](/images_proof/venv.jpg)
+
+### Pip
+![pip_list](/images_proof/pip_list.jpg)
+
+![pip_install](/images_proof/pip_install.jpg)
+
+### Quản lý dependencies với requirements.txt
+![requirements](/images_proof/requirements.jpg)
