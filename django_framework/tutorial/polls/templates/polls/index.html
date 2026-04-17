@@ -1,0 +1,16 @@
+{% if latest_question_list %}
+    <ul>
+    {% for question in latest_question_list %}
+        <li><a href="{% url 'polls:detail' question.id }/">{{ question.question_text }}</a></li>
+    {% endfor %}
+    </ul>
+{% else %}
+    <p>No polls are available.</p>
+{% endif %}
+
+
+/*
+    Vì sao nên đặt `polls/templates/polls/index.html` thay vì `polls/templates/index.html`
+    DjangoTemplates tìm kiếm template và chọn template đầu tiên trong mọi thư mục con vì vậy có thể xảy ra vấn đề gọi nhầm file
+    để rõ ràng hơn, nên đặt template trong thư mục con trùng tên với app.
+*/
