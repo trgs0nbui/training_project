@@ -66,3 +66,18 @@ các loại máy tính cũng như các loại thiết bị điện tử nói chu
 
 - Đối với Django, View là trung tâm logic, nhận request, xử lý, trả response
 - Đối với Laravel, Controller chỉ là lớp logic trung gian, cho thấy sự tách biệt rõ ràng hơn MVT
+
+### Set up môi trường dev: Python, Django, PostgreSQL (Local & Docker)
+- Setup Local
+    #### Cài đặt Python 
+    ![python_version](/images_proof/python_version.jpg)
+    #### Cài đặt PostgreSQL và sử dụng PgAdmin 4
+    - Version PostgreSQL và pgAdmin4
+    ![pgadmin4](/images_proof/pgadmin4.jpg)
+    ![postgre_version](/images_proof/postgre_version.jpg)
+
+    #### Setup Django
+    ![django_setup](/images_proof/django_set_up.jpg)
+
+    #### Docker setup
+    ![docker_version](/images_proof/docker_version.jpg)
