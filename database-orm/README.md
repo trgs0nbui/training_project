@@ -44,7 +44,7 @@
 ### c. Cẩn thận khi sử dụng `related_name` và `related_query_name`
 - Nếu sử dụng reverse relation ship, bắt buộc phải xác định 1 tên đảo ngược và tên truy vấn duy nhất cho trường đó.
 -> Nó có thể gây ra 1 vấn để ở các abstract cơ bản bởi vì các trường của class này bao gồm các class con cùng với chính những giá trị của các thuộc tính
-- Để xử lý vấn đề này, khi dùng reverse relationship trong 1 abstract class, phần giá nên chứa `'%(app_label)s'` và `'%(class)s'`
+- Để xử lý vấn đề này, khi dùng reverse relationship trong 1 abstract class, phần giá trị nên chứa `'%(app_label)s'` và `'%(class)s'`
 ```
     from django.db import models
 
@@ -64,3 +64,64 @@
     class ChildB(Base):
         pass
 ```
+## 2. ORM
+
+## 3. QuerySet
+### Tổng quan về QuerySet
+QuerySet được sử dụng trong các trường hợp sau:
+    - Iteration
+    - Slicing
+    - Pickling/Caching
+    - repr()
+    - len()
+    - list()
+    - bool() 
+### b. Pickling QuerySets
+Nếu ta pickle 1 QuerySet, nó sẽ buộc tất cả kết quả phải nạp vào bộ nhớ trước khi pickling. Pickling thường được sử dụng như 1 tiền con trỏ để caching.
+và khi cached queryset được nạp lại, ta muốn các kết quả đã sản sàng ở hiện tại và sẵn sàng được sử dụng. Điều này có nghĩa là khi ta unpickle 1 QuerySet,
+nó sẽ chứa các kết quả tại thời điểm mà nó đã pickle, đồng thời các kết quả này đều đang ở trong cơ sở dữ liệu.
+
+Nếu ta chỉ muốn pickle những thông tin cần thiết để tạo lại QuerySet từ cơ sở dữ liệu ở thời điểm sau đó, pickle thuộc tính truy vấn của QuerySet.
+Ta có thể tạo QuerySet nguyên bản với ví dụ sau:
+```
+>>> import pickle
+>>> query = pickle.loads(s)  # Assuming 's' is the pickled string.
+>>> qs = MyModel.objects.all()
+>>> qs.query = query
+```
+
+Lưu ý: Pickles của các đối tượng QuerySet chỉ hợp lệ cho phiên bản của Django - cái mà được sử dụng để sinh ra chúng.
+
+### c. filter()
+- `filter(*args, **kwargs)` trả về 1 QuerySet mới chứa các đối tượng mà trùng khớp với tham số được truyền vào
+(ứng với WHERE trong SQL)
+```
+Product.objects.filter(
+    price__gt=500,
+    category__name="Electronics"
+)
+```
+
+### d. exclude()
+- `exclude(*args, **kwargs)` trả 1 QuerySet mới chứa các đối tượng mà không trùng với các tham số tìm kiếm
+(ứng với NOT trong SQL)
+
+### e. annotate()
+- `annotate(*args, **kwargs)` dùng để thêm các field tính toán vào từng Object trong QuerySet
+annotate áp dụng cho mỗi row tương đương với GROUP BY trong SQL 
+
+### f. aggregate()
+- `aggregate(*args, **kwargs)` trả về 1 dictionary của các giá trị aggregate được tính bởi QuerySet. Mọi đối số 
+trong aggregate đều xác định 1 giá trị mà được chứa trong dictionary trả về.
+- Tức là arregate() sẽ tính toán trên toàn bộ QuerySet và trả về 1 kết quả duy nhất (ứng với các Aggregate Function trong SQL: SUM, MIN, MAX,...)
+
+### g. select_related()
+- `select_related(*fields)` trả về 1 QuerySet mà QuerySet đó sẽ "follow" các quan hệ khóa ngoại, QS này sẽ chọn những dữ liệu bổ sung
+của các đối tượng liên quan khi nó thực hiện query. 
+- select_related() ứng với JOIN trong SQL
+### h. prefetch_related()
+- `prefetch_related(*lookups)` trả về 1 QuerySet mà nó sẽ tự động truy xuất trong 1 batch những đối tượng liên quan cho mỗi lookups riêng biệt
+- Mục đích cũng giống như `select_related()`, cả 2 đều được sử dụng để dừng việc tràn query của cơ sở dữ liệu khi truy cập tới các đối tượng liên quan
+nhưng chiến lược sẽ khác nhau
+- `select_related()` hoạt động bằng cách tạo ra 1 SQL join và chứa các trường của đối tượng liên quan trong SELECT. Được sử dụng trong mối quan hệ 1 - 1 và foreign key.
+- `prefetch_related()` thực hiện tìm kiếm riêng biệt cho từng mối quan hệ và thực hiện 'joining' trong Python. Vì vậy, nó được sử dụng cho N - N, N - 1
