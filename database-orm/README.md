@@ -125,3 +125,44 @@ của các đối tượng liên quan khi nó thực hiện query.
 nhưng chiến lược sẽ khác nhau
 - `select_related()` hoạt động bằng cách tạo ra 1 SQL join và chứa các trường của đối tượng liên quan trong SELECT. Được sử dụng trong mối quan hệ 1 - 1 và foreign key.
 - `prefetch_related()` thực hiện tìm kiếm riêng biệt cho từng mối quan hệ và thực hiện 'joining' trong Python. Vì vậy, nó được sử dụng cho N - N, N - 1
+
+## 4. CSRF
+### a. CSRF là gì?
+- CSRF (Cross-Site Request Forgery) là một loại lỗ hổng bảo mật web nguy hiểm
+- Bản chất của CSRF là lợi dụng niềm tin của web đối với trình duyệt của người dùng. Khi đã đăng nhập vào 1 web và được xác thực qua cookie, kẻ tấn công có thể lợi dụng cookie này để thực hiện các hành động mà ta không hề hay biết
+- CSRF không đánh cắp dữ liệu trực tiếp, mà lừa người dùng thực hiện các hành động mà họ không có ý định làm
+---
+### Cách CSRF hoạt động
+- CSRF hoạt động như sau:
+    - Bước 1: Người dùng đăng nhập vào 1 trang web và nhận được cookie xác thực
+    - Bước 2: Người dùng vẫn đăng nhập và cookie vẫn còn hiệu lực
+    - Bước 3: Kẻ tấn công lừa người dùng truy cập vào 1 website độc hại
+    - Bước 4: Web này chứa mã tự động gửi request đến trang web mà người dùng đã đăng nhập trước đó
+    - Bước 5: Trình duyệt tự động gửi cookie xác thực cùng với request này
+    - Bước 6: Trang web tin tưởng request này vì nó đi kèm cookie xác thực hợp lệ và thực hiện các hành động nguy hiểm
+
+--- 
+### Cách phòng chống CSRF
+#### Sử dụng CSRF Token
+- Đây là một chuỗi ngẫu nhiên, được tạo ra cho mỗi phiên làm việc của người dùng
+- Cách triển khai CSRF Token
+    - Tạo token: Người dùng bắt đầu phiên làm việc, máy chủ tạo ra 1 token ngẫu nhiên và lưu trữ nó trong session của người dùng
+    - Nhúng token vào form: Token được nhúng vào tất cả các form trên web dưới dạng trường ẩn
+    - Xác thực token: Khi nhận được request, máy chủ so sánh token rồi gửi đi token được lưu trong session của người dùng
+    - Từ chối request không hợp lệ: Nếu token không khớp hoặc không tồn tại, request bị từ chối.
+
+### CSRF protection với Django
+- Django framework tích hợp sẵn middleware bảo vệ CSRF, tự động thêm token vào các form và xác thực token khi nhận request.
+- Django mặc định cho phép bảo vệ CSRF bằng cách thêm `django.middleware.csrf.CsrfViewMiddleware` trong `settings/py`
+- Điều cần làm tiếp theo chính là thêm `% csrf_token %` vào biểu mẫu POST
+---
+#### Cách CSRF token hoạt động trong Django
+- Khi mở trang chứa form đã cài đặt, Django tự động tạo 1 cookie trình duyệt trên `csrftoken`. Cookie này liên tục theo dõi hoạt động người dùng trên trang và nhận diện riêng từng người
+
+- Khi người dùng gửi biểu mẫu, server này so sánh giá trị của cookie với giá trị của `csrfmiddlewaretoken` trong trường nhập bị ẩn. Nếu trùng khớp, server sẽ xử lý biểu mẫu thành công, nếu không, xảy ra lỗi
+- Thoạt nhìn, cookie và csrfmiddlewaretoken là khác nhau nhưng thực chất đã có 1 lớp bảo vệ đối với csrftoken.
+    - Hàm get_token() che CSRF token trước khi chuyển nó vào trường nhập liệu.
+    - Khi biểu mẫu được gửi, token CSRF được hiển thị với sự trợ giúp của khóa bí mật trong file cài đặt
+    - Token được bỏ che và được so sánh với cookie session.
+    - Nếu giống nhau, biểu mẫu được xử lý, nếu không server trả về lỗi
+- Django làm mới CSRF token mỗi lần khởi động một phiên người dùng
