@@ -1,18 +1,19 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect, get_object_or_404
 from .models import *
 from django.db.models import Count, Sum, F
+from .forms import ProductForm
 
 # QuerySet với filter và select_related
-def product_list(request):
-    min_price = request.GET.get('min_price', 0)
+# def product_list(request):
+#     min_price = request.GET.get('min_price', 0)
     
-    products = Product.objects.filter(
-        price__gte = min_price
-    ).select_related('category') # Lọc ra những sản phẩm có giá >= min_price có category
+#     products = Product.objects.filter(
+#         price__gte = min_price
+#     ).select_related('category') # Lọc ra những sản phẩm có giá >= min_price có category
     
-    return render(request, 'shop/product_list.html', {
-        'products': products
-    })
+#     return render(request, 'shop/product_list.html', {
+#         'products': products
+#     })
     
 # QuerySet với Filter và Prefetch_related
 def product_by_tag(request, tag_name):
@@ -48,4 +49,45 @@ def dashboard(request):
         'total_products': total_products,
         'revenue': revenue['total']
     })
+
+def product_list(request):
+    products = Product.objects.select_related(
+        'category'
+    ).prefetch_related(
+        'tags', 'images'
+    )
+
+    return render(request, 'shop/product_list.html', {
+        'products': products
+    })
+
+##########
+def create_product(request):
+    form = ProductForm()
     
+    if request.method == "POST":
+        form = ProductForm(request.POST)
+        
+        if form.is_valid():
+            form.save()
+            return redirect('product_list')
+        
+    return render(request, 'shop/product_form.html', {
+        'form': form
+    })
+    
+def update_product(request, id):
+    product = get_object_or_404(Product, id=id)
+    
+    form = ProductForm(instance=product)
+    
+    if request.method == "POST":
+        form = ProductForm(request.POST, instance=product)
+        
+        if form.is_valid():
+            form.save()
+            return redirect('product_list')
+        
+    return render(request, 'shop/product_form.html', {
+        'form': form
+    })

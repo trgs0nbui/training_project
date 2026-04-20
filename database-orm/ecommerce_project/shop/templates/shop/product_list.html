@@ -1,0 +1,13 @@
+<h2>Product List</h2>
+
+<ul>
+    {% for product in products %}
+        <li>
+            <strong>{{ product.name }}</strong><br>
+            Price: {{ product.price }}<br>
+            Category: {{ product.category.name }}
+        </li>
+    {% empty %}
+        <li>No products found</li>
+    {% endfor %}
+</ul>
