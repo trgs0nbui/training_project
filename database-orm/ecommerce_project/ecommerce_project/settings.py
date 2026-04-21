@@ -114,6 +114,7 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticatedOrReadOnly',
     ],
+    'EXCEPTION_HANDLER': 'accounts.custom_exception_handler.custom_exception_handler'
 }
 
 SIMPLE_JWT = {

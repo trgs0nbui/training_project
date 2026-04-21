@@ -8,6 +8,8 @@ from rest_framework import viewsets, permissions, filters
 from .serializers import ProductSerializer, ProductCreateSerializer
 from .pagination import StandardResultsSetPagination
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.exceptions import NotFound, ValidationError, PermissionDenied
+from rest_framework.response import Response
 
 # QuerySet với filter và select_related
 def product_list(request):
@@ -133,3 +135,61 @@ class ProductViewSet(viewsets.ModelViewSet):
             return ProductCreateSerializer
         
         return ProductSerializer
+    
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        serializer = self.get_serializer(page, many=True) if page is not None else self.get_serializer(queryset, many=True)
+        data = serializer.data
+        if page is not None:
+            return self.get_paginated_response({
+                "success": True,
+                "message": "Lấy danh sách sản phẩm thành công.",
+                "data": data
+            })
+        return Response({
+            "success": True,
+            "message": "Lấy danh sách sản phẩm thành công.",
+            "data": data
+        })
+
+    def retrieve(self, request, *args, **kwargs):
+        product = get_object_or_404(Product, pk=kwargs.get('pk'))
+        serializer = self.get_serializer(product)
+        return Response({
+            "success": True,
+            "message": "Lấy chi tiết sản phẩm thành công.",
+            "data": serializer.data
+        })
+
+    def create(self, request, *args, **kwargs):
+        response = super().create(request, *args, **kwargs)
+        response.data = {
+            "success": True,
+            "message": "Tạo sản phẩm thành công.",
+            "data": response.data
+        }
+        return response
+
+    def update(self, request, *args, **kwargs):
+        response = super().update(request, *args, **kwargs)
+        response.data = {
+            "success": True,
+            "message": "Cập nhật sản phẩm thành công.",
+            "data": response.data
+        }
+        return response
+
+    def destroy(self, request, *args, **kwargs):
+        super().destroy(request, *args, **kwargs)
+        return Response({
+            "success": True,
+            "message": "Xóa sản phẩm thành công.",
+            "data": None
+        })
+
+    def perform_create(self, serializer):
+        price = serializer.validated_data.get('price', 0)
+        if price <= 0:
+            raise ValidationError({"price": "Giá sản phẩm phải lớn hơn 0."})
+        serializer.save()

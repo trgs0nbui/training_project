@@ -6,6 +6,9 @@ from rest_framework import viewsets, permissions, filters
 from .serializers import UserSerializer
 from .pagination import StandardResultsSetPagination
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.response import Response
+
 # register logic
 def register_view(request):
     form = RegisterForm()
@@ -60,3 +63,55 @@ class UserViewSet(viewsets.ModelViewSet):
     search_fields = ['username', 'email']
     ordering_fields = ['id', 'username', 'date_joined']
     ordering = ['id']
+    
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        serializer = self.get_serializer(page, many=True) if page is not None else self.get_serializer(queryset, many=True)
+        data = serializer.data
+        if page is not None:
+            return self.get_paginated_response({
+                "success": True,
+                "message": "Lấy danh sách user thành công.",
+                "data": data
+            })
+        return Response({
+            "success": True,
+            "message": "Lấy danh sách user thành công.",
+            "data": data
+        })
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response({
+            "success": True,
+            "message": "Lấy chi tiết user thành công.",
+            "data": serializer.data
+        })
+
+    def create(self, request, *args, **kwargs):
+        response = super().create(request, *args, **kwargs)
+        response.data = {
+            "success": True,
+            "message": "Tạo user thành công.",
+            "data": response.data
+        }
+        return response
+
+    def update(self, request, *args, **kwargs):
+        response = super().update(request, *args, **kwargs)
+        response.data = {
+            "success": True,
+            "message": "Cập nhật user thành công.",
+            "data": response.data
+        }
+        return response
+
+    def destroy(self, request, *args, **kwargs):
+        super().destroy(request, *args, **kwargs)
+        return Response({
+            "success": True,
+            "message": "Xóa user thành công.",
+            "data": None
+        })
