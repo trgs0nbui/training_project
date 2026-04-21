@@ -4,18 +4,20 @@ from django.db.models import Count, Sum, F
 from .forms import ProductForm
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib import messages
+from rest_framework import viewsets, permissions
+from .serializers import ProductSerializer, ProductCreateSerializer
 
 # QuerySet với filter và select_related
-# def product_list(request):
-#     min_price = request.GET.get('min_price', 0)
+def product_list(request):
+    min_price = request.GET.get('min_price', 0)
     
-#     products = Product.objects.filter(
-#         price__gte = min_price
-#     ).select_related('category') # Lọc ra những sản phẩm có giá >= min_price có category
+    products = Product.objects.filter(
+        price__gte = min_price
+    ).select_related('category') # Lọc ra những sản phẩm có giá >= min_price có category
     
-#     return render(request, 'shop/product_list.html', {
-#         'products': products
-#     })
+    return render(request, 'shop/product_list.html', {
+        'products': products
+    })
     
 # QuerySet với Filter và Prefetch_related
 def product_by_tag(request, tag_name):
@@ -111,3 +113,13 @@ def delete_product(request, id):
     return render(request, 'shop/product_list.html', {
         'products': product
     })
+    
+class ProductViewSet(viewsets.ModelViewSet):
+    queryset = Product.objects.all()
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    
+    def get_serializer_class(self):
+        if self.action in ['create', 'update', 'partial_update']:
+            return ProductCreateSerializer
+        
+        return ProductSerializer
