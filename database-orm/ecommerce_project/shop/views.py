@@ -2,6 +2,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from .models import *
 from django.db.models import Count, Sum, F
 from .forms import ProductForm
+from django.contrib.auth.decorators import login_required, permission_required
+from django.contrib import messages
 
 # QuerySet với filter và select_related
 # def product_list(request):
@@ -26,6 +28,7 @@ def product_by_tag(request, tag_name):
     })
     
 # QuerySet với prefetch_related và annotate
+@login_required
 def order_list(request):
     orders = Order.objects.select_related('user').prefetch_related(
         'items__product'
@@ -50,6 +53,7 @@ def dashboard(request):
         'revenue': revenue['total']
     })
 
+@login_required
 def product_list(request):
     products = Product.objects.select_related(
         'category'
@@ -62,6 +66,7 @@ def product_list(request):
     })
 
 ##########
+@permission_required('shop.add_product', raise_exception=True)
 def create_product(request):
     form = ProductForm()
     
@@ -76,6 +81,7 @@ def create_product(request):
         'form': form
     })
     
+@permission_required('shop.change_product', raise_exception=True)
 def update_product(request, id):
     product = get_object_or_404(Product, id=id)
     
@@ -90,4 +96,18 @@ def update_product(request, id):
         
     return render(request, 'shop/product_form.html', {
         'form': form
+    })
+    
+@permission_required('shop.delete_product', raise_exception=True)
+def delete_product(request, id):
+    product = get_object_or_404(Product, id=id)
+    
+    if request.method == 'POST':
+        product.delete()
+        messages.success(request, 'Product is deleted')
+        
+        return redirect('product_list')
+    
+    return render(request, 'shop/product_list.html', {
+        'products': product
     })
