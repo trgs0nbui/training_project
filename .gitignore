@@ -4,3 +4,4 @@
 /django_framework/tutorial/.env
 /database-orm/.venv
 *.csv
+cursorrules-django.md

@@ -85,3 +85,32 @@ Vì vậy ta có class Router, việc cần làm là đăng ký view vào router
 
 - Về cơ bản, Router chỉ hỗ trowjcacs action .list(), .retrieve(), .create(), .update(), .partial_update() và .destroy()
 -> Để router nhận biết được action riêng mà ta viết thêm, ta sử dụng decorator @action mà Django hỗ trợ
+
+# Pagination, Filtering & Ordering
+--
+## Pagination
+- PNP được tích hợp sẵn trong:
+    + GenericAPIView
+    + ListAPIView
+    + ModelViewSet
+- Nếu muốn custom pagination, ta cần ghi đè 1 trong những class pagination, ví dụ:
+```
+class LargeResultsSetPagination(PageNumberPagination):
+    page_size = 1000
+    page_size_query_param = 'page_size'
+    max_page_size = 10000
+
+class StandardResultsSetPagination(PageNumberPagination):
+    page_size = 100
+    page_size_query_param = 'page_size'
+    max_page_size = 1000
+```
+Sau đó có thể sử dụng bằng cách import vào 1 view hoặc config global trong settings.py:
+```
+REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS': 'apps.core.pagination.StandardResultsSetPagination'
+}
+```
+---
+## Filtering
+## Ordering
