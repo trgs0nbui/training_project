@@ -1,7 +1,9 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import login, authenticate, logout
-from django.contrib.auth.models import Group
+from django.contrib.auth.models import Group, User
 from .forms import RegisterForm
+from rest_framework import viewsets, permissions
+from .serializers import UserSerializer
 
 # register logic
 def register_view(request):
@@ -45,3 +47,8 @@ def login_view(request):
 def logout_view(request):
     logout(request)
     return redirect('login')
+
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
