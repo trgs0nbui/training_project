@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import login, authenticate, logout
+from django.contrib.auth.models import Group
 from .forms import RegisterForm
 
 # register logic
@@ -12,6 +13,8 @@ def register_view(request):
         if form.is_valid():
             user = form.save()
             
+            group = Group.objects.get(name='Customer')
+            user.groups.add(group)
             login(request, user)
             
             return redirect('product_list')
