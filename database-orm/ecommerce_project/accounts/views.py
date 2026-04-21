@@ -2,9 +2,10 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.models import Group, User
 from .forms import RegisterForm
-from rest_framework import viewsets, permissions
+from rest_framework import viewsets, permissions, filters
 from .serializers import UserSerializer
-
+from .pagination import StandardResultsSetPagination
+from django_filters.rest_framework import DjangoFilterBackend
 # register logic
 def register_view(request):
     form = RegisterForm()
@@ -52,3 +53,10 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    pagination_class = StandardResultsSetPagination
+    
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter]
+    filterset_fields = ['is_active', 'date_joined']
+    search_fields = ['username', 'email']
+    ordering_fields = ['id', 'username', 'date_joined']
+    ordering = ['id']

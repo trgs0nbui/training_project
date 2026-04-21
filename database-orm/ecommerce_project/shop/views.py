@@ -4,8 +4,10 @@ from django.db.models import Count, Sum, F
 from .forms import ProductForm
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib import messages
-from rest_framework import viewsets, permissions
+from rest_framework import viewsets, permissions, filters
 from .serializers import ProductSerializer, ProductCreateSerializer
+from .pagination import StandardResultsSetPagination
+from django_filters.rest_framework import DjangoFilterBackend
 
 # QuerySet với filter và select_related
 def product_list(request):
@@ -116,7 +118,15 @@ def delete_product(request, id):
     
 class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.all()
+    pagination_class = StandardResultsSetPagination
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    
+    # Định nghĩa filter sẽ sử dụng
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter]
+    filterset_fields = ['category', 'tags']
+    search_fields = ['name', 'description']
+    ordering_fields = ['id', 'name', 'price']
+    ordering = ['id']
     
     def get_serializer_class(self):
         if self.action in ['create', 'update', 'partial_update']:
