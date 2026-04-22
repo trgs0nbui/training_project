@@ -16,3 +16,6 @@ __pycache__/
 testingrules-django.md
 cursorrules-django.md
 /database-orm/django-service-repository.instructions.md
+
+# .env
+.env
