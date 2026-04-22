@@ -1,8 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import login, authenticate, logout
-from django.contrib.auth.models import User
-from .forms import RegisterForm
 from rest_framework import viewsets, permissions, filters
+from rest_framework.views import APIView
 from .serializers import UserSerializer, LoginSerializer, RegisterSerializer
 from .pagination import StandardResultsSetPagination
 from django_filters.rest_framework import DjangoFilterBackend
@@ -10,59 +9,82 @@ from rest_framework.response import Response
 from accounts.services.auth_service import AuthService
 from accounts.services.user_service import UserService
 from rest_framework.exceptions import NotFound, AuthenticationFailed
-from rest_framework.decorators import api_view, permission_classes, authentication_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework import status
-from accounts.permissions import IsAdminGroup
+from rest_framework_simplejwt.tokens import RefreshToken
 
-@api_view(['POST'])
-@permission_classes([AllowAny])
-@authentication_classes([]) 
-def login_api(request):
-    serializer = LoginSerializer(data=request.data)
-    serializer.is_valid(raise_exception=True)
 
-    try:
-        result = AuthService.login(serializer.validated_data)
-    except AuthenticationFailed as e:
+class LoginAPIView(APIView):
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def post(self, request):
+        serializer = LoginSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            result = AuthService.login(serializer.validated_data)
+        except AuthenticationFailed as e:
+            return Response({
+                "success": False,
+                "message": str(e)
+            }, status=status.HTTP_401_UNAUTHORIZED)
+
         return Response({
-            "success": False,
-            "message": str(e)
-        }, status=status.HTTP_401_UNAUTHORIZED)
+            "success": True,
+            "access": result["access"],
+            "refresh": result["refresh"]
+        }, status=status.HTTP_200_OK)
 
-    return Response({
-        "success": True,
-        "access": result["access"],
-        "refresh": result["refresh"]
-    })
+class RegisterAPIView(APIView):
+    permission_classes = [AllowAny]
+    authentication_classes = []
 
+    def post(self, request):
+        serializer = RegisterSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
-@api_view(['POST'])
-# @permission_classes([AllowAny])
-# @authentication_classes([]) 
-def register_api(request):
-    serializer = RegisterSerializer(data=request.data)
-    serializer.is_valid(raise_exception=True)
+        try:
+            result = AuthService.register(serializer.validated_data)
+        except Exception as e:
+            return Response({
+                "success": False,
+                "message": str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
 
-    try:
-        result = AuthService.register(serializer.validated_data)
-    except Exception as e:
         return Response({
-            "success": False,
-            "message": str(e)
-        }, status=status.HTTP_400_BAD_REQUEST)
+            "success": True,
+            "access": result["access"],
+            "refresh": result["refresh"]
+        }, status=status.HTTP_201_CREATED)
+        
+class LogoutAPIView(APIView):
+    permission_classes = [IsAuthenticated]
 
-    return Response({
-        "success": True,
-        "access": result["access"],
-        "refresh": result["refresh"]
-    })
+    def post(self, request):
+        try:
+            refresh_token = request.data.get("refresh")
 
-# logout
-def logout_view(request):
-    AuthService.logout(request)
-    return redirect('login')
+            if not refresh_token:
+                return Response({
+                    "success": False,
+                    "message": "Refresh token is required"
+                }, status=400)
 
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+
+            return Response({
+                "success": True,
+                "message": "Logout successful"
+            })
+
+        except Exception:
+            return Response({
+                "success": False,
+                "message": "Invalid token"
+            }, status=400)
+        
 class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
