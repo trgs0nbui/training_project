@@ -1,59 +1,69 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import login, authenticate, logout
-from django.contrib.auth.models import Group, User
+from django.contrib.auth.models import User
 from .forms import RegisterForm
 from rest_framework import viewsets, permissions, filters
-from .serializers import UserSerializer
+from .serializers import UserSerializer, LoginSerializer, RegisterSerializer
 from .pagination import StandardResultsSetPagination
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
+from accounts.services.auth_service import AuthService
+from accounts.services.user_service import UserService
+from rest_framework.exceptions import NotFound, AuthenticationFailed
+from rest_framework.decorators import api_view, permission_classes, authentication_classes
+from rest_framework.permissions import AllowAny
+from rest_framework import status
+from accounts.permissions import IsAdminGroup
 
-# register logic
-def register_view(request):
-    form = RegisterForm()
-    
-    if request.method == "POST":
-        form = RegisterForm(request.POST)
-        
-        if form.is_valid():
-            user = form.save()
-            
-            group = Group.objects.get(name='Customer')
-            user.groups.add(group)
-            login(request, user)
-            
-            return redirect('product_list')
-        
-    return render(request, 'accounts/register.html', {
-        'form': form
+@api_view(['POST'])
+@permission_classes([AllowAny])
+@authentication_classes([]) 
+def login_api(request):
+    serializer = LoginSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+
+    try:
+        result = AuthService.login(serializer.validated_data)
+    except AuthenticationFailed as e:
+        return Response({
+            "success": False,
+            "message": str(e)
+        }, status=status.HTTP_401_UNAUTHORIZED)
+
+    return Response({
+        "success": True,
+        "access": result["access"],
+        "refresh": result["refresh"]
     })
-    
-# login logic
-def login_view(request):
-    if request.method == "POST":
-        username = request.POST.get('username')
-        password = request.POST.get('password')
-        
-        user = authenticate(request, username=username, password=password)
-        
-        if user:
-            login(request, user)
-            return redirect('product_list')
-        
-        return render(request, 'accounts/login.html', {
-            'error': 'Invalid credentials'
-        })
-    
-    return render(request, 'accounts/login.html')
+
+
+@api_view(['POST'])
+# @permission_classes([AllowAny])
+# @authentication_classes([]) 
+def register_api(request):
+    serializer = RegisterSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+
+    try:
+        result = AuthService.register(serializer.validated_data)
+    except Exception as e:
+        return Response({
+            "success": False,
+            "message": str(e)
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    return Response({
+        "success": True,
+        "access": result["access"],
+        "refresh": result["refresh"]
+    })
 
 # logout
 def logout_view(request):
-    logout(request)
+    AuthService.logout(request)
     return redirect('login')
 
 class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     pagination_class = StandardResultsSetPagination
@@ -64,52 +74,51 @@ class UserViewSet(viewsets.ModelViewSet):
     ordering_fields = ['id', 'username', 'date_joined']
     ordering = ['id']
     
-    def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
-        page = self.paginate_queryset(queryset)
-        serializer = self.get_serializer(page, many=True) if page is not None else self.get_serializer(queryset, many=True)
-        data = serializer.data
-        if page is not None:
-            return self.get_paginated_response({
-                "success": True,
-                "message": "Lấy danh sách user thành công.",
-                "data": data
-            })
-        return Response({
-            "success": True,
-            "message": "Lấy danh sách user thành công.",
-            "data": data
-        })
+    def get_queryset(self):
+        user = self.request.user
+        
+        if user.is_admin: 
+            return UserService.list_users()
+        return UserService.filter_users(id=user.id)
 
     def retrieve(self, request, *args, **kwargs):
-        instance = self.get_object()
-        serializer = self.get_serializer(instance)
+        try:
+            user = UserService.get_user(kwargs['pk'])
+        except Exception:
+            raise NotFound("User can not be found")
+
+        serializer = self.get_serializer(user)
+        
         return Response({
             "success": True,
-            "message": "Lấy chi tiết user thành công.",
+            "message": "Lấy chi tiết user thành công",
             "data": serializer.data
         })
-
+        
     def create(self, request, *args, **kwargs):
-        response = super().create(request, *args, **kwargs)
-        response.data = {
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = UserService.create_user(serializer.validated_data)
+        output = self.get_serializer(user)
+        return Response({
             "success": True,
             "message": "Tạo user thành công.",
-            "data": response.data
-        }
-        return response
+            "data": output.data
+        })
 
     def update(self, request, *args, **kwargs):
-        response = super().update(request, *args, **kwargs)
-        response.data = {
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = UserService.update_user(kwargs['pk'], serializer.validated_data)
+        output = self.get_serializer(user)
+        return Response({
             "success": True,
             "message": "Cập nhật user thành công.",
-            "data": response.data
-        }
-        return response
+            "data": output.data
+        })
 
     def destroy(self, request, *args, **kwargs):
-        super().destroy(request, *args, **kwargs)
+        UserService.delete_user(kwargs['pk'])
         return Response({
             "success": True,
             "message": "Xóa user thành công.",
