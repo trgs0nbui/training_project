@@ -118,6 +118,8 @@ REST_FRAMEWORK = {
     'EXCEPTION_HANDLER': 'accounts.custom_exception_handler.custom_exception_handler'
 }
 
+DJANGO_SETTINGS_MODULE= 'tests/test_*.py'
+
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),

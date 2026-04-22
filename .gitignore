@@ -1,8 +1,18 @@
+# venv
 /python_tutorial/myvenv
 /web_server/.venv
 /django_framework/.venv
 /django_framework/tutorial/.env
 /database-orm/.venv
+
 *.csv
+
+# pycache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Markdown
+testingrules-django.md
 cursorrules-django.md
 /database-orm/django-service-repository.instructions.md
