@@ -5,3 +5,4 @@
 /database-orm/.venv
 *.csv
 cursorrules-django.md
+/database-orm/django-service-repository.instructions.md
