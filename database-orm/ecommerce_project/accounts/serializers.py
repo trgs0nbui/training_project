@@ -23,8 +23,10 @@ class RegisterSerializer(serializers.Serializer):
             raise serializers.ValidationError("Username has already existed")
         return value
     
-    def validate(self, data):
-        if data['password'] != data['confirm_password']:
+    def validate(self, attrs):
+        if attrs['password'] != attrs['confirm_password']:
             raise serializers.ValidationError({
                 "password": "Password doesn't match."
             })
+
+        return attrs

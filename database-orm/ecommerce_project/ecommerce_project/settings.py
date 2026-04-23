@@ -10,9 +10,7 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY: Load from environment variables
-SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-change-this-in-production")
-if SECRET_KEY == "django-insecure-change-this-in-production" and not os.getenv("DEBUG"):
-    raise ValueError("SECRET_KEY is not set in environment variables")
+SECRET_KEY = os.getenv("SECRET_KEY")
 
 DEBUG = os.getenv("DEBUG", "False") == "True"
 
@@ -126,8 +124,6 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "accounts.custom_exception_handler.custom_exception_handler",
 }
 
-DJANGO_SETTINGS_MODULE = "tests/test_*.py"
-
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
@@ -204,3 +200,24 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
 
 CELERY_TIMEZONE = 'UTC'
+
+# EMAIL CONFIGURATION
+# ============ EMAIL CONFIGURATION ============
+EMAIL_BACKEND = os.getenv(
+    'EMAIL_BACKEND',
+    'django.core.mail.backends.smtp.EmailBackend'
+)
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@ecommerce.com')
+
+# ============ CELERY TASK CONFIGURATION ============
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes
+CELERY_TASK_SOFT_TIME_LIMIT = 25 * 60  # 25 minutes
+
+# Add 'django_celery_results' to store task results
+CELERY_RESULT_EXPIRES = 3600  # 1 hour
