@@ -2,7 +2,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from rest_framework.exceptions import AuthenticationFailed
 from django.contrib.auth.models import User
-
+from accounts.services.email_service import EmailService
 
 class AuthService:
 
@@ -43,6 +43,9 @@ class AuthService:
 
         user = User.objects.create_user(password=password, **data)
 
+        # Trigger async email task
+        EmailService.send_welcome_email(user)
+        
         refresh = RefreshToken.for_user(user)
 
         return {
