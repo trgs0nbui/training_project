@@ -1,4 +1,13 @@
 services:
+
+  redis:
+    image: redis:7-alpine
+    container_name: ecommerce_redis
+    ports:
+      - "6379:6379"
+    networks:
+      - ecommerce_network
+
   db:
     image: postgres:15-alpine
     container_name: ecommerce_db
@@ -15,6 +24,14 @@ services:
     build: .
     container_name: ecommerce_web
 
+    command: >
+      sh -c "
+      python wait_for_db.py &&
+      python manage.py migrate &&
+      python manage.py collectstatic --noinput &&
+      gunicorn ecommerce_project.wsgi:application --bind 0.0.0.0:8000
+      "
+
     volumes:
       - static_volume:/app/staticfiles
       - media_volume:/app/media
@@ -24,16 +41,30 @@ services:
 
     depends_on:
       - db
+      - redis
 
     env_file:
-    - .env
-    
-    environment:
-      DB_NAME: ${POSTGRES_DB}
-      DB_USER: ${POSTGRES_USER}
-      DB_PASSWORD: ${POSTGRES_PASSWORD}
-      DB_HOST: db
-      DB_PORT: 5432
+      - .env
+
+    networks:
+      - ecommerce_network
+
+  celery:
+    build: .
+    container_name: ecommerce_celery
+
+    command: >
+      sh -c "
+      python wait_for_db.py &&
+      celery -A ecommerce_project worker --loglevel=info
+      "
+
+    depends_on:
+      - db
+      - redis
+
+    env_file:
+      - .env
 
     networks:
       - ecommerce_network
