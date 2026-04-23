@@ -71,11 +71,11 @@ WSGI_APPLICATION = "ecommerce_project.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": os.getenv("DB_ENGINE", "django.db.backends.postgresql"),
-        "NAME": os.getenv("DB_NAME", "ecommerce"),
-        "USER": os.getenv("DB_USER", "ecommerce_user"),
-        "PASSWORD": os.getenv("DB_PASSWORD", "password"),
-        "HOST": os.getenv("DB_HOST", "localhost"),
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.getenv("POSTGRES_DB", "ecommerce"),
+        "USER": os.getenv("POSTGRES_USER", "postgres"),
+        "PASSWORD": os.getenv("POSTGRES_PASSWORD", "postgres"),
+        "HOST": os.getenv("DB_HOST", "db"),  
         "PORT": os.getenv("DB_PORT", "5432"),
         "CONN_MAX_AGE": 600,
         "ATOMIC_REQUESTS": True,
@@ -194,3 +194,13 @@ CORS_ALLOWED_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:3000"
     ","
 )
 CORS_ALLOW_CREDENTIALS = True
+
+# CELERY CONFIG
+CELERY_BROKER_URL = 'redis://redis:6379/0'
+
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+
+CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
+
+CELERY_TIMEZONE = 'UTC'
