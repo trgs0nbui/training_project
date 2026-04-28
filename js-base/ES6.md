@@ -1085,3 +1085,43 @@ console.log(unique);
 ```
 
 ---
+# Promise
+## 1. Định nghĩa
+- Promise là đối tượng dùng để xử lý các tác vụ bất đồng bộ (asynchronous) trong JS
+- Ví dụ:
+    - Gọi API
+    - Đọc file
+    - Chờ dữ liệu từ server
+    - Delay thời gian 
+- Promise giúp code:
+    - Dễ đọc hơn callback
+    - Tránh callback hell
+    - Dễ xử lý thành công / thất bại
+
+## 2. Các trạng thái của Promise
+- Promise có 3 trạng thái
+    - Pending: Đang xử lý
+    - Fulfilled: Thành công
+    - Rejected: Thất bại
+
+## 3. Cú pháp
+```
+    const myPromise = new Promise((resolve, reject) => {
+        let success = true;
+
+        if(success) {
+            resolve("Thành công");
+        } else {
+            resolve("Thất bại");
+        }
+    })
+```
+
+---
+# DOM
+- Là cấu trúc biểu diễn HTML dưới dạng object
+- Js có thể:
+    - Thay đổi HTML 
+    - Thay đổi CSS 
+    - Thêm / xóa element
+    - Bắt sự kiện
