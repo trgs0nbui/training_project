@@ -259,3 +259,207 @@
     console.log(count.value)
 ```
 
+#### 3. computed()
+- Nhận 1 hàm getter() và trả về 1 đối tượng ref cho giá trị được trả về từ getter. Nó cũng có thể nhận 1 đối tượng với hàm get, set để tạo 1 đối tượng ref có thể ghi được.
+
+- Type 
+```
+    function computed<T> (
+        getter: (oldValue: T | undefined) => T, 
+        debuggerOptions?: DebuggerOptions 
+    ): Readonly<Ref<Readonly<T>>>
+
+    function computed<T>(
+        options: {
+            get: (oldValue: T | undefined) => T 
+            set: (value: T) => void 
+        }, 
+        debuggerOptions?: DebuggerOptions
+    ): Ref<T>
+```
+- Ví dụ:
+1. readonly computed ref:
+```
+    const count = ref(1)
+    const plusOne = computed(() => count.value + 1)
+
+    console.log(plusOne.value)
+
+    plusOne.value++
+```
+
+2. Writable computed ref:
+```
+    const count = ref(1)
+    const plusOne = computed({
+        get: () => count.value + 1,
+        set: (val) => {
+            count.value = val - 1
+        }
+    })
+
+    plusOne.value = 1
+    console.log(count.value)
+```
+
+#### 4. watch()
+- Quan sát 1 hoặc nhiều nguồn dữ liệu tái chủ động và gọi hàm callback khi nguồn thay đổi
+- Type 
+```
+// watching single source
+function watch<T>(
+  source: WatchSource<T>,
+  callback: WatchCallback<T>,
+  options?: WatchOptions
+): WatchHandle
+
+// watching multiple sources
+function watch<T>(
+  sources: WatchSource<T>[],
+  callback: WatchCallback<T[]>,
+  options?: WatchOptions
+): WatchHandle
+
+type WatchCallback<T> = (
+  value: T,
+  oldValue: T,
+  onCleanup: (cleanupFn: () => void) => void
+) => void
+
+type WatchSource<T> =
+  | Ref<T> // ref
+  | (() => T) // getter
+  | (T extends object ? T : never) // reactive object
+
+interface WatchOptions extends WatchEffectOptions {
+  immediate?: boolean // default: false
+  deep?: boolean | number // default: false
+  flush?: 'pre' | 'post' | 'sync' // default: 'pre'
+  onTrack?: (event: DebuggerEvent) => void
+  onTrigger?: (event: DebuggerEvent) => void
+  once?: boolean // default: false (3.4+)
+}
+
+interface WatchHandle {
+  (): void // callable, same as `stop`
+  pause: () => void
+  resume: () => void
+  stop: () => void
+}
+```
+- mặc định của watch() là lazy, chỉ gọi callback 1 lần duy nhất khi nguồn được quan sát thay đổi
+- Đối số đầu tiên của watch:
+    - hàm getter trả về 1 giá trị 
+    - 1 ref 
+    - 1 đối tượng reactive 
+    - hoặc 1 mảng
+- Đối số thứ 2 của watch là callback được gọi khi nguồn thay đổi. Callback nhận vào 3 đối số: giá trị mới, giá trị cũ, 1 hàm được đăng ký để dọn dẹp callback.
+Callback dọn dẹp sẽ được gọi ngay trước khi effect tiếp theo được chạy
+- Đối số thứ 3 có thể là các đối tượng sau:
+    - immediate
+    - deep
+    - flush
+    - onTrack / onTrigger
+    - once 
+
+## Component Basic
+- Components cho phép ta chia nhỏ UI thành những phần độc lập và tái sử dụng được. Vue thực thi những mô hình component cho phép ta đóng gói nội dung và logic ở bên trong mỗi component
+- Để sử dụng 1 component con, ta cần import nó trong component cha
+```
+    <script setup>
+    import ButtonCounter from './ButtonCounter.vue'
+    </script>
+
+    <template>
+    <h1>Here is a child component!</h1>
+    <ButtonCounter />
+    </template>
+```
+- Component có thể tái sử dụng nhiều lần nếu muốn
+
+### 1. Passing props
+- Giả sử ta đang build 1 blog, ta cần 1 component đại diện cho 1 bài blog. Ta muốn toàn bộ các blog đều giống nhau về layout nhưng khác nhau về nội dung.
+Component sẽ không còn hữu dụng nếu chúng ta không thể truyền dữ liệu vào nó (như tiêu đề, nội dung của mỗi blog riêng biệt mà ta muốn hiển thị).
+- Props sẽ giải quyết vấn đề này, để truyền 1 tiêu đề cho thành phần blog, ta phải khai báo danh sách props mà thành phần này chấp nhận bằng cách sử dụng `defineProps`
+```
+    <script setup>
+    defineProps(['title'])
+    </script>
+
+    <template>
+        <h4> {{ title }} </h4>
+    </template>
+```
+- defineProps là 1 macro compile-time, chỉ hoạt động trong <script setup> mà không cần import từ bên ngoài, defineProps trả về 1 đối tượng mà chứa các props được truyền tới component vì vậy có thể truy cập tới chúng bằng Js nếu cần.
+- 1 component có thể có nhiều props nếu ta muốn
+- Nói tóm lại: khi component cha muốn truyền dữ liệu tới component con -> sử dụng props
+
+### 2. emit events
+- Là cơ chế cho phép component con gửi sự kiện lên component cha
+- Ví dụ:
+Child Component
+```
+    <script setup>
+    const emit = defineEmits(['click-me'])
+
+    const handleClick = () => {
+        emit('click-me')
+    }
+    </script>
+
+    <template>
+        <button @click="handleClick">
+            Click me
+        </button>
+    </template>
+```
+Parent Component
+```
+    <template>
+        <ChildButton @click-me="handleClick"/>
+    <template>
+
+    <script setup>
+    const handleClick = () => {
+        console.log('Child clicked!')
+    }
+    </script>
+```
+
+- Ví dụ với emit có dữ liệu
+ProductItem
+```
+    <script setup>
+    const props = defineProps({
+        product: Object
+    })
+
+    const emit = defineEmits(['add-to-cart'])
+
+    const add = () => {
+        emit('add-to-cart', props.product)
+    }
+    </script>
+
+    <template>
+        <button @click="add">
+            Add to cart
+        </button>
+    </template>
+```
+Parent
+```
+    <template>
+        <ProductItem 
+            :product="product"
+            @add-to-cart="handleAdd"
+        />
+    </template>
+
+    <script setup>
+    const handleAdd = (product) => {
+        console.log('Added: ', product)
+    }
+    </script>
+```
+-> Child không tự xử lý logic mà chỉ thông báo sự kiện tới component cha, parent sẽ quyết định hành vi sẽ thực hiện
